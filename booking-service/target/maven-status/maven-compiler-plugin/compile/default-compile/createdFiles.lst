@@ -1,0 +1,14 @@
+com\hotel\bookingservice\dto\BookingEvent.class
+com\hotel\bookingservice\controller\BookingController$3.class
+com\hotel\bookingservice\controller\BookingController$4.class
+com\hotel\bookingservice\controller\BookingController$2.class
+com\hotel\bookingservice\service\BookingService.class
+com\hotel\bookingservice\BookingServiceApplication.class
+com\hotel\bookingservice\model\Booking.class
+com\hotel\bookingservice\model\BookingStatus.class
+com\hotel\bookingservice\controller\BookingController.class
+com\hotel\bookingservice\config\BookingConfig.class
+com\hotel\bookingservice\dto\Room.class
+com\hotel\bookingservice\repository\BookingRepository.class
+com\hotel\bookingservice\controller\BookingController$1.class
+com\hotel\bookingservice\client\RoomServiceClient.class

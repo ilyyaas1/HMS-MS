@@ -1,0 +1,5 @@
+com\hotel\notificationservice\dto\BookingEvent.class
+com\hotel\notificationservice\config\NotificationConfig.class
+com\hotel\notificationservice\service\EmailService.class
+com\hotel\notificationservice\consumer\NotificationConsumer.class
+com\hotel\notificationservice\NotificationServiceApplication.class

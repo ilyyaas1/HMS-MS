@@ -1,0 +1,175 @@
+
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: hotel_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hotel_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - hotel-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Message Broker
+  rabbitmq:
+    image: rabbitmq:3.11-management-alpine
+    container_name: hotel_rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - hotel-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  # Discovery Service (Eureka Server)
+  discovery-service:
+    build: ./discovery-service
+    container_name: hotel_discovery_service
+    ports:
+      - "8761:8761"
+    networks:
+      - hotel-network
+
+  # Identity and Access Management
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1.1
+    container_name: hotel_keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json
+    networks:
+      - hotel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: hotel_api_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER-URI=http://localhost:8180/realms/hotel-realm
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK-SET-URI=http://keycloak:8080/realms/hotel-realm/protocol/openid-connect/certs
+    networks:
+      - hotel-network
+    depends_on:
+      - keycloak
+      - discovery-service
+
+  # Room Service
+  room-service:
+    build: ./room-service
+    container_name: hotel_room_service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/room_db
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    networks:
+      - hotel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+
+  # Booking Service
+  booking-service:
+    build: ./booking-service
+    container_name: hotel_booking_service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/booking_db
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    networks:
+      - hotel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      discovery-service:
+        condition: service_started
+
+  # User Service
+  user-service:
+    build: ./user-service
+    container_name: hotel_user_service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    networks:
+      - hotel-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+
+  # Notification Service
+  notification-service:
+    build: ./notification-service
+    container_name: hotel_notification_service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    networks:
+      - hotel-network
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      discovery-service:
+        condition: service_started
+
+
+
+# Networks
+networks:
+  hotel-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
