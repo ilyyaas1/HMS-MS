@@ -63,11 +63,6 @@ const GuestLayout = () => {
                             <li><Link to="/rooms" className="hover:text-white">Rooms</Link></li>
                         </ul>
                     </div>
-                    <div>
-                        <h4 className="text-white font-semibold mb-4">Contact</h4>
-                        <p>123 Luxury Ave, NY</p>
-                        <p>+1 (555) 123-4567</p>
-                    </div>
                 </div>
             </footer>
         </div>

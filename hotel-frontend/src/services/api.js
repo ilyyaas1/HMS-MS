@@ -64,9 +64,10 @@ export const createBooking = async (bookingData) => {
 export const updateBookingStatus = async (id, status) => {
     // Ensure id is a number
     const bookingId = typeof id === 'string' ? parseInt(id) : id;
-    // URL encode the status parameter
-    const encodedStatus = encodeURIComponent(status);
-    const response = await api.put(`/booking-service/bookings/${bookingId}/status?status=${encodedStatus}`);
+    const response = await api.put(
+        `/booking-service/bookings/${bookingId}/status`, 
+        { status: status }
+    );
     return response.data;
 };
 

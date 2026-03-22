@@ -31,7 +31,16 @@ public class BookingController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<?> updateBookingStatus(@PathVariable Long id, @RequestParam String status) {
+        public ResponseEntity<?> updateBookingStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        String status = request.get("status");
+        if (status == null || status.isEmpty()) {
+            return ResponseEntity.badRequest().body(new java.util.HashMap<String, String>() {
+                {
+                    put("message", "Status parameter is required");
+                    put("error", "Missing status");
+                }
+            });
+        }
         try {
             Booking updatedBooking = bookingService.updateBookingStatus(id, status);
             return ResponseEntity.ok(updatedBooking);
